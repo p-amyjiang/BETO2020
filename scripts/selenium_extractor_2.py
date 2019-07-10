@@ -83,17 +83,18 @@ def scrape(driver):
 @click.command()
 @click.option('-o', '--output_file', 'output_file', type=str, required=True,
             help='name of the output file to contant the list of HTML urls')
-@click.option('-f', '--first_url', 'first_url', type=str, required=False,
-            default='https://scholar.google.com/scholar?start=0&q=flame+retardant&hl=en&as_sdt=0,48&as_ylo=2015',
-            show_default=True,
-            help='URL that the crawler should use as the search base')
+@click.option('-s', '--search_term', 'search_term', type=str, required=True,
+            help='Search terms for Google scholar that the crawler should use as the search base')
 @click.option('-w', '--wait_time', 'wait_time', type=int, required=False,
             default=6, show_default=True,
             help='time in second between page fetches')
 @click.option('-p', '--max_pages', 'max_pages', type=int, required=False,
             default=10, show_default=True,
             help='maximum number of iterations (pages to fetch)')
-def selenium_extractor(output_file, first_url, wait_time, max_pages):
+
+def selenium_extractor(output_file, search_term, wait_time, max_pages):
+    
+    first_url = 'https://scholar.google.com/scholar?start=0&q=' + search_term.replace(" ", "+") 
     
     driver, urls = get_first_page(first_url)
     
@@ -103,11 +104,18 @@ def selenium_extractor(output_file, first_url, wait_time, max_pages):
                     pg_start=1, wait_time=wait_time)
         )
     driver.quit()
-
-    print('collected %d total URLS which will be saved to file %s' %
-            (len(urls), output_file))
-    with open(output_file, 'w') as f:
-        for url in urls:
+    
+    lines = [line.rstrip('\n') for line in open(output_file)]
+    lines.extend(urls)
+    
+    new_urls = np.unique(lines)
+    
+    print('collected %d new URLS which will be saved to file %s' %
+            (len(urls)-len(lines)+len(new_urls), output_file))
+    print('%d total URLS in file %s' %
+            (len(new_urls), output_file))
+    with open(output_file, 'a') as f:
+        for url in new_urls:
             f.write(url + '\n')
 
 
